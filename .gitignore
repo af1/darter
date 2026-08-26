@@ -1,0 +1,22 @@
+# Swift Package Manager / Xcode
+mac-app/.build/
+mac-app/.swiftpm/
+mac-app/Darter.app/
+mac-app/**/DerivedData/
+
+# Local code-signing identity -- the private key must never be committed.
+# The .crt is harmless but excluded too for simplicity; the README explains
+# how to generate your own.
+mac-app/signing/
+
+# macOS
+.DS_Store
+
+# Build output -- regenerate with scripts/make-share.sh, don't commit binaries.
+# Release zips are attached to GitHub Releases instead.
+share/
+Darter-v*.zip
+
+# Local tooling, not part of the project
+.claude/
+SKILL.md
