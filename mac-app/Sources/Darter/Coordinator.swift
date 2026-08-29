@@ -50,15 +50,20 @@ final class Coordinator {
 
     // MARK: Arrow-key photo navigation
     //
-    // Plain left/right arrows are swallowed entirely while Lightroom is
-    // frontmost and replaced with our own paced SDK next/previous-photo
-    // commands. Reason: Lightroom's held-arrow scrolling runs on an internal
-    // repeat that queues navigation faster than it can render, so after
-    // releasing the key it kept scrolling for many seconds (14s observed).
-    // Forward-throttling the OS autorepeats couldn't fix it -- the flood is
-    // internal to Lightroom once it sees the key as held. By never letting
-    // it see a held arrow, nothing can queue: at most one command is in
-    // flight when the key is released, because we stop on keyUp.
+    // In paced mode, plain left/right arrows are swallowed while Lightroom is
+    // frontmost and replayed as discrete synthesized presses on our own
+    // timer. Reason: Lightroom's held-arrow scrolling runs on an internal
+    // repeat that queues navigation faster than it can render, so releasing
+    // the key left it scrolling for many seconds (20s measured). Throttling
+    // the forwarded OS autorepeats couldn't fix it -- the flood is internal
+    // to Lightroom once it believes the key is held. Never letting it see a
+    // held key is what bounds it; releasing stops our timer with at most one
+    // press in flight.
+    //
+    // The rate is only safe up to what Lightroom can actually render;
+    // anything beyond that queues and reappears as overscroll, which is why
+    // it's user-configurable rather than fixed.
+    //
     // Modified arrows (Shift-extend selection etc.) pass through untouched,
     // as do up/down.
 
@@ -133,9 +138,16 @@ final class Coordinator {
             return beginNativeArrowHold(keyCode: keyCode)
         }
 
-        let goNext = (keyCode == 124)
+        guard let pid = frontmostPID else { return false }
         navHeldKeyCode = keyCode
-        LightroomURLSender.navigatePhoto(next: goNext)
+
+        // Swallow the real press and replay it as a discrete one. The press
+        // itself can't be passed through: Lightroom would then see a key
+        // held with no keyUp and start its own internal repeat, which is
+        // what queues navigation faster than it renders and keeps scrolling
+        // long after release.
+        stepPhoto(keyCode: keyCode, pid: pid)
+
         navTimer?.invalidate()
         // Like OS key repeat: one photo on the press, and continuous scroll
         // only starts after the key has been held a moment -- otherwise a
@@ -152,10 +164,31 @@ final class Coordinator {
                     self?.navHeldKeyCode = nil
                     return
                 }
-                LightroomURLSender.navigatePhoto(next: goNext)
+                self.stepPhoto(keyCode: keyCode, pid: pid)
             }
         }
         return true
+    }
+
+    /// One photo step, as a discrete synthesized arrow press.
+    ///
+    /// Deliberately NOT the SDK route (LrSelection.nextPhoto via a
+    /// lightroom:// URL): that round-trips through Launch Services, the
+    /// plugin's URL handler and a Lua async task, which is both slower and
+    /// doesn't use Lightroom's own navigation path -- it feels unlike simply
+    /// tapping the key. A synthesized keyDown+keyUp pair goes straight to
+    /// Lightroom's event queue and is indistinguishable from a real tap.
+    ///
+    /// Discrete presses are also what keeps this bounded: Lightroom's runaway
+    /// queue only builds while it believes a key is *held*, and each pair
+    /// completes too quickly for its internal repeat to start.
+    private func stepPhoto(keyCode: UInt16, pid: pid_t) {
+        // Deliberately no expectSyntheticKey() here. postToPid delivers
+        // straight to Lightroom and bypasses this session tap, so the
+        // suppression window buys nothing -- and opening one repeatedly
+        // during a hold is actively harmful, since it can match a real
+        // autorepeat and pass it through (see EventTapManager.handle).
+        KeySynthesizer.postKey(CGKeyCode(keyCode), toPid: pid)
     }
 
     func stopArrowNavigation(keyCode: UInt16) {

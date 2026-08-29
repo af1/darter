@@ -67,7 +67,7 @@ struct AppConfig: Equatable {
         smallMultiplierModifier: .option,
         largeMultiplierModifier: .shift,
         arrowNavMode: .paced,
-        arrowNavPhotosPerSecond: 40
+        arrowNavPhotosPerSecond: 24
     )
 }
 
@@ -93,7 +93,7 @@ extension AppConfig: Codable {
         smallMultiplierModifier = try container.decodeIfPresent(ModifierChoice.self, forKey: .smallMultiplierModifier) ?? .option
         largeMultiplierModifier = try container.decodeIfPresent(ModifierChoice.self, forKey: .largeMultiplierModifier) ?? .shift
         arrowNavMode = try container.decodeIfPresent(ArrowNavMode.self, forKey: .arrowNavMode) ?? .paced
-        arrowNavPhotosPerSecond = try container.decodeIfPresent(Double.self, forKey: .arrowNavPhotosPerSecond) ?? 40
+        arrowNavPhotosPerSecond = try container.decodeIfPresent(Double.self, forKey: .arrowNavPhotosPerSecond) ?? 24
     }
 
     func encode(to encoder: Encoder) throws {

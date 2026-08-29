@@ -37,14 +37,6 @@ function handler.URLHandler(url)
         return
     end
 
-    if params.action == "nextPhoto" or params.action == "previousPhoto" then
-        local goNext = (params.action == "nextPhoto")
-        LrTasks.startAsyncTask(function()
-            CommandHandler.navigatePhoto(goNext)
-        end)
-        return
-    end
-
     if params.action == "listPresets" then
         LrTasks.startAsyncTask(function()
             PresetHandler.listPresets()

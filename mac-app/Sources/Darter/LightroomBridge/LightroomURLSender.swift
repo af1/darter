@@ -41,12 +41,6 @@ enum LightroomURLSender {
         openLightroomURL(query: [("tool", toolName)])
     }
 
-    /// Select the next/previous photo via LrSelection -- used by the owned
-    /// arrow-key navigation.
-    static func navigatePhoto(next: Bool) {
-        openLightroomURL(query: [("action", next ? "nextPhoto" : "previousPhoto")])
-    }
-
     /// Ask the plugin to (re)write the list of Develop presets to the shared
     /// TSV file, so the Mac app can read them into its preset pickers.
     static func requestPresetList() {

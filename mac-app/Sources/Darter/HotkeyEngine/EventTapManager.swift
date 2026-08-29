@@ -187,7 +187,13 @@ final class EventTapManager {
         // user's X binding and fire a slider adjustment. (In practice
         // pid-targeted posts bypass this session tap entirely, but keep the
         // guard in case delivery behavior differs across macOS versions.)
-        if keyCode == suppressKeyCode, ProcessInfo.processInfo.systemUptime < suppressUntil {
+        //
+        // Autorepeats are excluded deliberately: a synthesized press is never
+        // an autorepeat, so matching one can only ever be a false positive --
+        // and since this branch passes the event THROUGH, a false positive
+        // leaks a real held-key repeat to the frontmost app. That leak let
+        // Lightroom see a held arrow and start its own runaway repeat.
+        if !isAutorepeat, keyCode == suppressKeyCode, ProcessInfo.processInfo.systemUptime < suppressUntil {
             suppressKeyCode = nil
             return Unmanaged.passRetained(event)
         }

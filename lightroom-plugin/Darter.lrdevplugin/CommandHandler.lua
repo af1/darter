@@ -1,7 +1,6 @@
 local LrDevelopController = import 'LrDevelopController'
 local LrApplicationView   = import 'LrApplicationView'
 local LrApplication       = import 'LrApplication'
-local LrSelection         = import 'LrSelection'
 local LrTasks             = import 'LrTasks'
 local Log                 = require 'Logger'
 
@@ -190,24 +189,7 @@ local function applyDelta(shortName, delta, reldelta)
     end
 end
 
--- Advance the selection one photo. Driven by the Mac app's paced arrow-key
--- navigation (it swallows held arrows and replays them at a controlled rate
--- so Lightroom's internal key-repeat can't build a runaway queue).
-local function navigatePhoto(goNext)
-    local ok, err = pcall(function()
-        if goNext then
-            LrSelection.nextPhoto()
-        else
-            LrSelection.previousPhoto()
-        end
-    end)
-    if not ok then
-        Log:warnf("navigatePhoto failed: %s", tostring(err))
-    end
-end
-
 return {
     applyDelta = applyDelta,
     activateTool = activateTool,
-    navigatePhoto = navigatePhoto,
 }

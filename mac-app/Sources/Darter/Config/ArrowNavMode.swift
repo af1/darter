@@ -16,11 +16,11 @@ enum ArrowNavMode: String, Codable, CaseIterable, Equatable {
     /// repeat speed, and native overscroll along with it.
     case native
 
-    /// Swallow held arrows and drive LrSelection.nextPhoto/previousPhoto on
+    /// Swallow held arrows and replay them as discrete synthesized presses on
     /// our own timer at a configurable rate. Lightroom never sees a held key,
     /// so its internal repeat never starts and nothing can queue past the
-    /// release -- the only mode that actually bounds the overscroll. Costs
-    /// the native hold feel (fixed rate instead).
+    /// release -- the only mode that bounds the overscroll. Each press takes
+    /// Lightroom's own navigation path, so it behaves like tapping the key.
     case paced
 
     var displayName: String {

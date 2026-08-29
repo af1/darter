@@ -28,7 +28,7 @@ struct ToolsTabView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 case .paced:
-                    Text("Darter advances photos itself at a fixed rate while the arrow is held, so scrolling stops as soon as you let go.")
+                    Text("Darter advances photos itself while the arrow is held. Keep this at or below the rate Lightroom can actually render — anything faster queues up and keeps scrolling after you let go. Around 2–3/sec suits uncached raw files; build Standard-Sized Previews to go faster.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,7 +38,7 @@ struct ToolsTabView: View {
                         Slider(value: Binding(
                             get: { viewModel.config.arrowNavPhotosPerSecond },
                             set: { viewModel.config.arrowNavPhotosPerSecond = $0; viewModel.commit() }
-                        ), in: 20...50, step: 1)
+                        ), in: 1...30, step: 1)
                         Text("\(Int(viewModel.config.arrowNavPhotosPerSecond))/sec")
                             .monospacedDigit()
                             .frame(width: 55, alignment: .trailing)
