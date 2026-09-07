@@ -4,5 +4,5 @@ return {
     LrPluginName        = "Darter",
     LrToolkitIdentifier = "com.andrew.darter.lightroom",
     URLHandler          = "URLHandler.lua",
-    VERSION             = { major = 0, minor = 6, revision = 1 },
+    VERSION             = { major = 0, minor = 6, revision = 2 },
 }

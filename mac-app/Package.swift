@@ -8,6 +8,11 @@ let package = Package(
         .executableTarget(
             name: "Darter",
             path: "Sources/Darter"
+        ),
+        .testTarget(
+            name: "DarterTests",
+            dependencies: ["Darter"],
+            path: "Tests/DarterTests"
         )
     ]
 )
