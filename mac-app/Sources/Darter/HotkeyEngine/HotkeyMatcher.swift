@@ -103,6 +103,10 @@ enum HotkeyMatcher {
         return best?.action
     }
 
+    /// A step modifier scales one adjustment; holding two at once is a chord
+    /// belonging to something else.
+    private static let multiplierModifierLimit = 1
+
     /// STRICT matching: every held modifier must be accounted for -- either
     /// required by the binding itself, or designated as one of the two
     /// multiplier modifiers in config. Anything else (e.g. Option+S when the
@@ -118,22 +122,37 @@ enum HotkeyMatcher {
         if shiftHeld && !binding.requiresShift && !multiplierModifiers.contains(.shift) { return false }
         if optionHeld && !binding.requiresOption && !multiplierModifiers.contains(.option) { return false }
         if controlHeld && !multiplierModifiers.contains(.control) { return false }
+
+        // Both step modifiers held together is a hyper/meh chord (or any
+        // app's global shortcut built from them), not a request for a
+        // different step size. Each one alone is still accepted above.
+        let acting = multiplierModifiers.filter {
+            isActing($0, binding: binding, shiftHeld: shiftHeld, optionHeld: optionHeld, controlHeld: controlHeld)
+        }
+        if acting.count > multiplierModifierLimit { return false }
+
         return true
     }
 
-    /// A held multiplier modifier only scales the amount when it is NOT part
-    /// of the binding's identity -- for a binding that itself requires
-    /// Shift, a held Shift selects the binding rather than multiplying it.
-    /// Small takes precedence if both multiplier modifiers are held.
+    /// A designated modifier only *acts* as a multiplier when it isn't part
+    /// of the binding's own identity -- for Shift+Tab a held Shift selects
+    /// the binding rather than scaling it.
+    private static func isActing(_ choice: ModifierChoice, binding: KeyBinding,
+                                 shiftHeld: Bool, optionHeld: Bool, controlHeld: Bool) -> Bool {
+        switch choice {
+        case .none: return false
+        case .shift: return shiftHeld && !binding.requiresShift
+        case .option: return optionHeld && !binding.requiresOption
+        case .control: return controlHeld
+        }
+    }
+
+    /// Which step scale a held modifier asks for. Small takes precedence,
+    /// though keyMatches already rejects events holding both.
     private static func multiplier(config: AppConfig, binding: KeyBinding,
                                    shiftHeld: Bool, optionHeld: Bool, controlHeld: Bool) -> Double {
         func active(_ choice: ModifierChoice) -> Bool {
-            switch choice {
-            case .none: return false
-            case .shift: return shiftHeld && !binding.requiresShift
-            case .option: return optionHeld && !binding.requiresOption
-            case .control: return controlHeld
-            }
+            isActing(choice, binding: binding, shiftHeld: shiftHeld, optionHeld: optionHeld, controlHeld: controlHeld)
         }
         if active(config.smallMultiplierModifier) { return config.smallMultiplier }
         if active(config.largeMultiplierModifier) { return config.largeMultiplier }

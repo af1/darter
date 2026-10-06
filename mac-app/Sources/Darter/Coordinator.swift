@@ -226,6 +226,16 @@ final class Coordinator {
             return false
         }
 
+        // A hyper-key remapper downstream of our tap strips nothing but adds
+        // its modifiers after we've seen the event, so a hyper chord looks
+        // like a bare keypress here. Reading live modifier state tells them
+        // apart. Checked only for keys that already matched, so ordinary
+        // typing never pays for it.
+        if ModifierState.hasHiddenModifiers(shift: shiftHeld, option: optionHeld,
+                                            command: commandHeld, control: controlHeld) {
+            return false
+        }
+
         // Only checked once we're already about to intercept a key -- an
         // Accessibility query per keystroke would slow down ordinary typing,
         // but for the small set of bound keys it's worth the round trip.

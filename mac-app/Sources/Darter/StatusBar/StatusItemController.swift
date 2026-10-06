@@ -25,6 +25,16 @@ final class StatusItemController {
 
         menu.addItem(.separator())
 
+        // No action, so AppKit greys it out for us -- it's a label, not a
+        // command.
+        menu.addItem(NSMenuItem(title: "Darter \(AppInfo.version)", action: nil, keyEquivalent: ""))
+
+        let updatesItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updatesItem.target = self
+        menu.addItem(updatesItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(title: "Quit Darter", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -43,6 +53,10 @@ final class StatusItemController {
 
     @objc private func openSettings() {
         coordinator?.openSettings()
+    }
+
+    @objc private func checkForUpdates() {
+        NSWorkspace.shared.open(AppInfo.releasesURL)
     }
 
     @objc private func quit() {

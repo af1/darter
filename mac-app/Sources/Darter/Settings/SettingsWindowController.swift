@@ -13,7 +13,7 @@ final class SettingsWindowController: NSWindowController {
         let window = NSWindow(contentViewController: hosting)
         // Version read straight from the bundle so the title always matches
         // the actual build -- nothing separate to keep in sync.
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let version = AppInfo.version
         window.title = "Darter Settings — v\(version)"
         // Not resizable by the user: the window is sized exactly to its
         // content (per tab), so resizing would only reveal dead space.
