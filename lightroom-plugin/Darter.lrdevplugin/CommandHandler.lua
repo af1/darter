@@ -1,6 +1,5 @@
 local LrDevelopController = import 'LrDevelopController'
 local LrApplicationView   = import 'LrApplicationView'
-local LrApplication       = import 'LrApplication'
 local LrTasks             = import 'LrTasks'
 local Log                 = require 'Logger'
 
@@ -129,20 +128,28 @@ local function ensureAdjustmentThreshold()
     adjustmentThresholdSet = ok
 end
 
--- Raw formats keep absolute white-balance sliders (Kelvin); everything else
--- (JPG, TIFF, PSD, PNG) uses the relative -100..100 scale, where the raw
--- step is far too big. Read the current photo's format only when a relative
--- step was actually supplied (WB sliders), so ordinary sliders pay nothing.
-local function isRelativeWhiteBalancePhoto()
-    -- NOT wrapped in pcall: photo:getRawMetadata yields the coroutine to
-    -- fetch metadata, and yielding across a pcall (C-call) boundary throws
-    -- "Yielding is not allowed within a C or metamethod call". This runs
-    -- inside the URLHandler's async task (with no pcall above it here), so
-    -- yielding is allowed.
-    local photo = LrApplication.activeCatalog():getTargetPhoto()
-    if photo == nil then return false end
-    local fmt = photo:getRawMetadata("fileFormat")
-    return fmt ~= "RAW" and fmt ~= "DNG"
+-- Raw captures keep absolute white balance in Kelvin (roughly 2000..50000);
+-- everything else uses a relative -100..100 scale, where a Kelvin-sized step
+-- covers the whole range at once.
+--
+-- The file format doesn't decide this. A TIFF or JPG converted to DNG still
+-- reports fileFormat "DNG" while keeping the relative scale of the original,
+-- so format sniffing sent it the Kelvin step. Ask the control for its own
+-- range instead: a maximum this small can only be the relative scale.
+--
+-- Temperature is the probe for both WB sliders, which switch scales
+-- together; Tint's two ranges (+/-150 raw, +/-100 relative) are too close to
+-- tell apart.
+local RELATIVE_TEMPERATURE_MAX = 100
+
+local function isRelativeWhiteBalance()
+    local ok, _, max = pcall(LrDevelopController.getRange, "Temperature")
+    if not ok or max == nil then
+        Log:warnf("Could not read Temperature range; assuming Kelvin")
+        return false
+    end
+
+    return max <= RELATIVE_TEMPERATURE_MAX
 end
 
 local function applyDelta(shortName, delta, reldelta)
@@ -170,7 +177,7 @@ local function applyDelta(shortName, delta, reldelta)
     end
 
     local effectiveDelta = delta
-    if reldelta ~= nil and isRelativeWhiteBalancePhoto() then
+    if reldelta ~= nil and isRelativeWhiteBalance() then
         effectiveDelta = reldelta
     end
 
