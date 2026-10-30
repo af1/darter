@@ -22,8 +22,24 @@ final class ModifierStateTests: XCTestCase {
         XCTAssertTrue(hidden(session: hyper))
     }
 
-    func testSingleHiddenModifierCounts() {
-        XCTAssertTrue(hidden(session: [.maskCommand]))
+    // Deliberately the opposite of what this asserted when the check was
+    // introduced. A lone hidden modifier turned out to be a race rather than
+    // a chord, which cost real keypresses -- see the two tests below.
+    func testSingleHiddenModifierIsTreatedAsRace() {
+        XCTAssertFalse(hidden(session: [.maskCommand]))
+    }
+
+    // Measured flags, captured when Shift+E passed through to Lightroom and
+    // switched it to the Library module. Shift is held but the E event was
+    // built before it registered. The low bits are the right-shift device
+    // bit and the non-coalesced bit, neither of which should matter here.
+    func testRacingShiftIsNotHidden() {
+        XCTAssertFalse(hidden(session: CGEventFlags(rawValue: 0x20104)))
+    }
+
+    // Measured flags from the hyper key: all four modifiers at once.
+    func testMeasuredHyperChordIsHidden() {
+        XCTAssertTrue(hidden(session: CGEventFlags(rawValue: 0x1e012b)))
     }
 
     // A modifier the event already reported is accounted for, not hidden.

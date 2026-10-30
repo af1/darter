@@ -14,8 +14,18 @@ enum ModifierState {
                shift: shift, option: option, command: command, control: control)
     }
 
-    /// True when the session reports a modifier the event didn't carry.
-    /// Caps Lock is excluded: it's a typing state, not part of a chord.
+    /// A single hidden modifier is a race, not a remapper.
+    ///
+    /// Reading live state asks what is held *now*, which isn't the instant
+    /// the event was built. Press Shift and a key together and the key event
+    /// can be stamped before Shift registers, leaving Shift hidden by this
+    /// measure -- so treating one hidden modifier as a chord threw away real
+    /// keypresses. A remapper hides its whole chord at once.
+    private static let chordModifierMinimum = 2
+
+    /// True when the session reports enough modifiers the event didn't carry
+    /// to be somebody's chord. Caps Lock is excluded: it's a typing state,
+    /// not part of one.
     static func hidden(in sessionFlags: CGEventFlags,
                        shift: Bool, option: Bool, command: Bool, control: Bool) -> Bool {
         let reported: [(CGEventFlags, Bool)] = [
@@ -25,8 +35,10 @@ enum ModifierState {
             (.maskControl, control),
         ]
 
-        return reported.contains { flag, carriedByEvent in
+        let hiddenCount = reported.filter { flag, carriedByEvent in
             sessionFlags.contains(flag) && !carriedByEvent
-        }
+        }.count
+
+        return hiddenCount >= chordModifierMinimum
     }
 }
